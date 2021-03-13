@@ -50,11 +50,11 @@ final class ModernAVPlayerPlaybackObservingService: PlaybackObservingService {
     init(player: AVPlayer) {
         ModernAVPlayerLogger.instance.log(message: "Init", domain: .lifecycleService)
         self.player = player
-        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemPlaybackStalled),
+        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemPlaybackStalled(_:)),
                                                name: NSNotification.Name.AVPlayerItemPlaybackStalled, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemPlayToEndTime),
+        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemPlayToEndTime(_:)),
                                                name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemFailedToPlayToEndTime),
+        NotificationCenter.default.addObserver(self, selector: #selector(ModernAVPlayerPlaybackObservingService.itemFailedToPlayToEndTime(_:)),
                                                name: NSNotification.Name.AVPlayerItemFailedToPlayToEndTime, object: nil)
     }
     
@@ -84,7 +84,8 @@ final class ModernAVPlayerPlaybackObservingService: PlaybackObservingService {
     }
     
     @objc
-    private func itemPlaybackStalled() {
+    private func itemPlaybackStalled(_ notification: NSNotification) {
+        guard let obj = notification.object as? AVPlayerItem, player.currentItem == obj else { return }
         ModernAVPlayerLogger.instance.log(message: "Item playback stalled notification", domain: .service)
         onPlaybackStalled?()
     }
@@ -94,14 +95,16 @@ final class ModernAVPlayerPlaybackObservingService: PlaybackObservingService {
     ///  We manually check if item has really reached his end time.
     ///
     @objc
-    private func itemPlayToEndTime() {
-        guard hasReallyReachedEndTime(player: player) else { itemFailedToPlayToEndTime(); return }
+    private func itemPlayToEndTime(_ notification: NSNotification) {
+        guard let obj = notification.object as? AVPlayerItem, player.currentItem == obj else { return }
+        guard hasReallyReachedEndTime(player: player) else { itemFailedToPlayToEndTime(notification); return }
         ModernAVPlayerLogger.instance.log(message: "Item play to end time notification", domain: .service)
         onPlayToEndTime?()
     }
     
     @objc
-    private func itemFailedToPlayToEndTime() {
+    private func itemFailedToPlayToEndTime(_ notification: NSNotification) {
+        guard let obj = notification.object as? AVPlayerItem, player.currentItem == obj else { return }
         ModernAVPlayerLogger.instance.log(message: "Item failed to play endtime notification", domain: .service)
         onFailedToPlayToEndTime?()
     }
